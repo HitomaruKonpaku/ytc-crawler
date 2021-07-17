@@ -1,6 +1,8 @@
 module.exports = {
   app: {
     chatOutDir: '../chats',
+    useCookie: !true,
+    cookiePath: '../cookies/cookies.txt',
   },
 
   puppeteer: {

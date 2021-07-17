@@ -34,6 +34,30 @@ async function main() {
   })
 
   const page = await browser.newPage()
+
+  if (config.app.useCookie) {
+    try {
+      const baseCookies = util.getCookies()
+      const cookies = baseCookies.map(v => {
+        const cookie = {
+          name: v.name,
+          value: v.value,
+          domain: v.domain,
+          path: v.path,
+          secure: true,
+          httpOnly: v.httpOnly,
+          expires: v.expire,
+        }
+        return cookie
+      })
+      await page.setCookie(...cookies)
+    } catch (error) {
+      logger.error(error.message)
+      console.trace(error)
+      debugger
+    }
+  }
+
   await page.setRequestInterception(true)
 
   page.on('request', async (request) => {
@@ -52,6 +76,21 @@ async function main() {
     const body = JSON.parse(request.postData())
     const continuation = body.continuation
     await browser.close()
+
+    if (config.app.useCookie) {
+      try {
+        const baseCookies = util.getCookies()
+        const cookie = baseCookies.map(v => {
+          const s = [v.name, v.value].join('=')
+          return s
+        }).join(' ')
+        Object.assign(headers, { cookie })
+      } catch (error) {
+        logger.error(error.message)
+        console.trace(error)
+        debugger
+      }
+    }
 
     await getLiveChat(url, headers, body, continuation)
   })

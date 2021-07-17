@@ -1,4 +1,5 @@
 const path = require('path')
+const { CookieMap } = require('cookiefile')
 const config = require('./config')
 const logger = require('./logger')
 
@@ -28,5 +29,17 @@ module.exports = {
     }
     const id = url.slice(-11)
     return id
+  },
+
+  getCookieFile() {
+    const value = path.join(__dirname, config.app.cookiePath)
+    return value
+  },
+
+  getCookies() {
+    const map = new CookieMap(this.getCookieFile())
+    const cookies = Array.from(map.values())
+      .filter(cookie => ['youtube.com'].some(v => cookie.domain.includes(v)))
+    return cookies
   },
 }
