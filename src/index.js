@@ -5,7 +5,9 @@ const config = require('./config')
 const logger = require('./logger')
 const io = require('./io')
 const util = require('./util')
+const ws = require('./ws')
 
+const wsServer = ws.server
 const args = process.argv.slice(2)
 const videoId = util.getYouTubeVideoId(args[0])
 
@@ -16,11 +18,15 @@ if (!videoId) {
   return
 }
 
-main().catch(error => {
-  logger.error(error.message)
-  console.trace(error)
-  debugger
-})
+main()
+  .then(() => {
+    ws.start()
+  })
+  .catch(error => {
+    logger.error(error.message)
+    console.trace(error)
+    debugger
+  })
 
 async function main() {
   io.makeDir(util.getChatDir())
@@ -197,48 +203,53 @@ function handleLiveChatActions(data) {
   const actions = Array.from(data)
   logger.log(`crawled ${actions.length} actions`)
 
-  const mapActions = actions.map(v => {
-    if (v.replayChatItemAction) {
-      const replayActions = v.replayChatItemAction.actions
-      if (replayActions.length !== 1) {
-        logger.warn('replayActions different than 1')
-        logger.warn(JSON.stringify(replayActions))
-        debugger
-        return
-      }
-      v = replayActions[0]
-    }
-
-    if (v.addChatItemAction) {
-      return handleAddChatItemAction(v.addChatItemAction)
-    }
-    if (v.addLiveChatTickerItemAction) {
-      return null
-    }
-    if (v.markChatItemAsDeletedAction) {
-      return null
-    }
-    if (v.markChatItemsByAuthorAsDeletedAction) {
-      return null
-    }
-
-    console.warn('action unhandle')
-    console.warn(JSON.stringify(v))
-    debugger
-    return null
-  })
+  const renderers = actions.map(v => mapChatAction(v)).filter(v => v)
 
   // Save all messages
-  let content = buildContentFromActions(mapActions.filter(v => v))
+  let content = buildContentFromRenderers(renderers)
   if (content) {
     io.appendFile(util.getChatFile(videoId), content)
   }
 
   // Save SuperChat only
-  content = buildContentFromActions(mapActions.filter(v => v && v.liveChatPaidMessageRenderer))
+  content = buildContentFromRenderers(renderers.filter(v => v.liveChatPaidMessageRenderer))
   if (content) {
     io.appendFile(util.getSuperChatFile(videoId), content)
   }
+}
+
+function mapChatAction(action) {
+  if (action.replayChatItemAction) {
+    const replayActions = action.replayChatItemAction.actions
+    if (replayActions.length !== 1) {
+      logger.warn('replayActions different than 1')
+      logger.warn(JSON.stringify(replayActions))
+      debugger
+      return
+    }
+    action = replayActions[0]
+  }
+
+  if (action.addChatItemAction) {
+    return handleAddChatItemAction(action.addChatItemAction)
+  }
+  if (action.addLiveChatTickerItemAction) {
+    return null
+  }
+  if (action.markChatItemAsDeletedAction) {
+    return null
+  }
+  if (action.markChatItemsByAuthorAsDeletedAction) {
+    return null
+  }
+  if (action.replaceChatItemAction) {
+    return null
+  }
+
+  console.warn('action unhandle')
+  console.warn(JSON.stringify(action))
+  debugger
+  return null
 }
 
 function handleAddChatItemAction(data) {
@@ -256,8 +267,8 @@ function handleAddChatItemAction(data) {
   return item
 }
 
-function buildContentFromActions(actions) {
-  let content = Array.from(actions || [])
+function buildContentFromRenderers(renderers) {
+  let content = Array.from(renderers || [])
     .map(v => JSON.stringify(v))
     .join('\r\n')
   if (content) {
