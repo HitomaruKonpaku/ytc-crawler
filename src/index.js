@@ -242,8 +242,11 @@ function mapChatAction(action) {
   if (action.replaceChatItemAction) {
     return null
   }
+  if (action.clickTrackingParams) {
+    return null
+  }
 
-  console.warn('action unhandle')
+  logger.warn('action unhandle')
   console.warn(JSON.stringify(action))
   debugger
   return null
