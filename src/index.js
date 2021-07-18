@@ -154,7 +154,7 @@ async function getLiveChat(url, reqHeaders, reqBody, continuation) {
 function getLiveChatWithTimeout(url, reqHeaders, reqBody, continuation, timeoutMs) {
   setTimeout(async () => {
     await getLiveChat(url, reqHeaders, reqBody, continuation)
-  }, timeoutMs || 5000)
+  }, timeoutMs)
 }
 
 function getLiveChatByContinuationData(url, reqHeaders, reqBody, continuationData) {
