@@ -33,6 +33,11 @@ module.exports = {
       logger.warn('data not found')
       return
     }
-    fs.appendFileSync(file, data, { flag: 'as' })
+    try {
+      fs.appendFileSync(file, data, { flag: 'as' })
+    } catch (error) {
+      logger.error(error.message)
+      console.trace(error)
+    }
   },
 }

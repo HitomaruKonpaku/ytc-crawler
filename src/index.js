@@ -9,6 +9,8 @@ const util = require('./util')
 const args = process.argv.slice(2)
 const videoId = util.getYouTubeVideoId(args[0])
 
+let retryCount = 0
+
 if (!videoId) {
   logger.error('VideoId invalid or not found')
   return
@@ -67,10 +69,12 @@ async function main() {
       return
     }
 
-    const file = util.getVideoChatFile(videoId)
-    logger.log('File:', file)
+    const files = [util.getChatFile(videoId), util.getSuperChatFile(videoId)]
+    files.forEach(file => {
+      logger.log('File:', file)
+      io.createFile(file)
+    })
     logger.showLineSeparator()
-    io.createFile(file)
 
     const headers = request.headers()
     const body = JSON.parse(request.postData())
@@ -110,7 +114,11 @@ async function getLiveChat(url, reqHeaders, reqBody, continuation) {
     if (!response.ok) {
       logger.error('STATUS', response.status)
       console.trace(response)
+      // TODO: Loop request in case of network error
+      getLiveChatWithTimeout(url, reqHeaders, reqBody, continuation, 5000)
       return
+    } else {
+      retryCount = 0
     }
 
     const body = await response.json()
@@ -143,10 +151,14 @@ async function getLiveChat(url, reqHeaders, reqBody, continuation) {
   }
 }
 
-function getLiveChatByContinuationData(url, reqHeaders, reqBody, continuationData) {
+function getLiveChatWithTimeout(url, reqHeaders, reqBody, continuation, timeoutMs) {
   setTimeout(async () => {
-    await getLiveChat(url, reqHeaders, reqBody, continuationData.continuation)
-  }, continuationData.timeoutMs)
+    await getLiveChat(url, reqHeaders, reqBody, continuation)
+  }, timeoutMs || 5000)
+}
+
+function getLiveChatByContinuationData(url, reqHeaders, reqBody, continuationData) {
+  getLiveChatWithTimeout(url, reqHeaders, reqBody, continuationData.continuation, continuationData.timeoutMs)
 }
 
 function handleLiveChatData(data) {
@@ -200,24 +212,33 @@ function handleLiveChatActions(data) {
     if (v.addChatItemAction) {
       return handleAddChatItemAction(v.addChatItemAction)
     }
-    if (v.markChatItemAsDeletedAction) {
-      return null
-    }
     if (v.addLiveChatTickerItemAction) {
       return null
     }
+    if (v.markChatItemAsDeletedAction) {
+      return null
+    }
+    if (v.markChatItemsByAuthorAsDeletedAction) {
+      return null
+    }
 
+    console.warn('action unhandle')
+    console.warn(JSON.stringify(v))
     debugger
     return null
   })
 
-  let content = mapActions
-    .filter(v => v)
-    .map(v => JSON.stringify(v))
-    .join('\r\n')
-  content += '\r\n'
+  // Save all messages
+  let content = buildContentFromActions(mapActions.filter(v => v))
+  if (content) {
+    io.appendFile(util.getChatFile(videoId), content)
+  }
 
-  io.appendFile(util.getVideoChatFile(videoId), content)
+  // Save SuperChat only
+  content = buildContentFromActions(mapActions.filter(v => v && v.liveChatPaidMessageRenderer))
+  if (content) {
+    io.appendFile(util.getSuperChatFile(videoId), content)
+  }
 }
 
 function handleAddChatItemAction(data) {
@@ -233,4 +254,14 @@ function handleAddChatItemAction(data) {
   }
 
   return item
+}
+
+function buildContentFromActions(actions) {
+  let content = Array.from(actions || [])
+    .map(v => JSON.stringify(v))
+    .join('\r\n')
+  if (content) {
+    content += '\r\n'
+  }
+  return content
 }
