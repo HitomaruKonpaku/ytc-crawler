@@ -242,12 +242,15 @@ function mapChatAction(action) {
   if (action.replaceChatItemAction) {
     return null
   }
+  if (action.showLiveChatTooltipCommand) {
+    return null
+  }
   if (action.clickTrackingParams) {
     return null
   }
 
   logger.warn('action unhandle')
-  console.warn(JSON.stringify(action))
+  logger.warn(JSON.stringify(action))
   debugger
   return null
 }
