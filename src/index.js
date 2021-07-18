@@ -5,9 +5,7 @@ const config = require('./config')
 const logger = require('./logger')
 const io = require('./io')
 const util = require('./util')
-const ws = require('./ws')
 
-const wsServer = ws.server
 const args = process.argv.slice(2)
 const videoId = util.getYouTubeVideoId(args[0])
 
@@ -20,7 +18,6 @@ if (!videoId) {
 
 main()
   .then(() => {
-    ws.start()
   })
   .catch(error => {
     logger.error(error.message)
