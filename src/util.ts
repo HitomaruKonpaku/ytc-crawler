@@ -1,44 +1,45 @@
-const path = require('path')
+import path from 'path'
+import { config } from './config'
 const { CookieMap } = require('cookiefile')
-const config = require('./config')
-const logger = require('./logger')
 
 const date = new Date()
 
-module.exports = {
-  getYouTubeVideoId(url) {
+export default {
+  setTitle(title: string) {
+    const s = String.fromCharCode(27) + "]0;" + title + String.fromCharCode(7)
+    process.stdout.write(s)
+  },
+
+  getYouTubeVideoId(url: string) {
     const pattern = /^(?:(?:https:\/\/youtu\.be\/)|(https:\/\/www\.youtube\.com\/watch\?v=)){0,1}[\w-]{11}$/g
     if (!pattern.test(url)) {
-      return null
+      throw new Error('Invalid YouTube URL')
     }
     const id = url.slice(-11)
     return id
   },
 
   getChatDir() {
-    const value = path.join(__dirname, config.app.chatOutDir)
-    logger.debug(value)
+    const value = path.join(__dirname, config.app.chatDir)
     return value
   },
 
-  getChatFile(id) {
+  getChatFile(id: string) {
     const name = [this.getFileTime(), id].join('_') + '.jsonl'
     const value = path.join(this.getChatDir(), name)
-    logger.debug(value)
     return value
   },
 
-  getSuperChatFile(id) {
+  getSuperChatFile(id: string) {
     const name = [this.getFileTime(), id, 'sc'].join('_') + '.jsonl'
     const value = path.join(this.getChatDir(), name)
-    logger.debug(value)
     return value
   },
 
   getCookies() {
     const map = new CookieMap(this.getCookieFile())
-    const cookies = Array.from(map.values())
-      .filter(cookie => ['youtube.com'].some(v => cookie.domain.includes(v)))
+    const cookies: any[] = Array.from(map.values())
+      .filter((cookie: any) => ['youtube.com'].some(v => cookie.domain.includes(v)))
     return cookies
   },
 

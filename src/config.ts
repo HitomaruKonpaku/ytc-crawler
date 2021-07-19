@@ -1,13 +1,14 @@
-module.exports = {
+export const config = {
   app: {
-    chatOutDir: '../chats',
+    logDir: '../_logs',
+    chatDir: '../_chats',
     useCookie: !true,
     cookiePath: '../cookies/cookies.txt',
   },
-
   puppeteer: {
     headless: false,
     width: 1920,
     height: 1080,
+    devtools: false,
   },
 }
