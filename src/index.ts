@@ -22,10 +22,10 @@ async function main() {
   const args = process.argv.slice(2)
   logger.debug({ args })
   const id = util.getYouTubeVideoId(args[0])
-  logger.debug({ youtubeId: id })
+  logger.debug({ videoId: id })
   videoId = id
   const url = getVideoUrl(id)
-  logger.info({ youtubeUrl: url })
+  logger.info({ videoUrl: url })
   await launchBrowser(url)
 }
 
@@ -45,11 +45,13 @@ async function launchBrowser(videoUrl: string) {
     },
     devtools: config.puppeteer.devtools,
   })
+  logger.silly({ videoId, puppeteer: { browser: { action: 'launch' } } })
 
   const page = await browser.newPage()
+  logger.silly({ videoId, puppeteer: { browser: { page: { action: 'newPage' } } } })
   await page.setRequestInterception(true)
 
-  if (config.app.useCookie) {
+  if (config.app.useCookies) {
     try {
       const baseCookies = util.getCookies()
       const cookies = baseCookies.map(v => {
@@ -75,9 +77,11 @@ async function launchBrowser(videoUrl: string) {
   page.on('request', async (request) => {
     const url = request.url()
     if (['googleads'].some(v => url.includes(v))) {
-      request.abort()
+      logger.silly({ videoId, request: { status: 'abort', url } })
+      await request.abort()
       return
     }
+    logger.silly({ videoId, request: { status: 'continue', url } })
     if (!url.includes('live_chat/get_live_chat')) {
       await request.continue()
       return
@@ -92,7 +96,8 @@ async function launchBrowser(videoUrl: string) {
     const continuation = body.continuation
     await browser.close()
 
-    if (config.app.useCookie) {
+    if (config.app.useCookies) {
+      logger.info({ videoId, msg: 'Cookies enabled' })
       try {
         const baseCookies = util.getCookies()
         const cookie = baseCookies.map(v => {
@@ -100,6 +105,7 @@ async function launchBrowser(videoUrl: string) {
           return s
         }).join(' ')
         Object.assign(headers, { cookie })
+        logger.info({ videoId, msg: 'Cookies applied' })
       } catch (error) {
         logger.error(error.message)
         console.trace(error)
@@ -112,6 +118,7 @@ async function launchBrowser(videoUrl: string) {
 
   page.on('response', async (response) => {
     const url = response.url()
+    logger.silly({ videoId, responseUrl: url })
     if (!url.includes('live_chat')) {
       return
     }
@@ -145,36 +152,38 @@ async function launchBrowser(videoUrl: string) {
   })
 
   await page.goto(videoUrl)
+  logger.silly({ videoId, puppeteer: { browser: { page: { action: 'goto', url: videoUrl } } } })
 
-  await page.waitForSelector('video')
-  await page.evaluate(() => {
-    const video = document.querySelector('video')
-    if (!video) { return }
-    video.onplay = () => video.pause()
-  })
+  // await page.waitForSelector('video')
+  // await page.evaluate(() => {
+  //   const video = document.querySelector('video')
+  //   if (!video) { return }
+  //   video.onplay = () => video.pause()
+  // })
 
-  const frameSelector = 'ytd-live-chat-frame'
-  const buttonSelector = '#show-hide-button ytd-toggle-button-renderer'
-  await page.waitForSelector(buttonSelector)
-  await page.evaluate((frameSelector, buttonSelector) => {
-    const frame = document.querySelector(frameSelector)
-    if (frame.getAttribute('collapsed') === null) {
-      return
-    }
-    const button = document.querySelector(buttonSelector)
-    button.click()
-  }, frameSelector, buttonSelector)
+  // const frameSelector = 'ytd-live-chat-frame'
+  // const buttonSelector = '#show-hide-button ytd-toggle-button-renderer'
+  // await page.waitForSelector(buttonSelector)
+  // await page.evaluate((frameSelector, buttonSelector) => {
+  //   const frame = document.querySelector(frameSelector)
+  //   if (frame.getAttribute('collapsed') === null) {
+  //     return
+  //   }
+  //   const button = document.querySelector(buttonSelector)
+  //   button.click()
+  // }, frameSelector, buttonSelector)
 
-  await page.evaluate(() => {
-    const video = document.querySelector('video')
-    if (!video) { return }
-    video.onplay = null
-    video.currentTime = 0
-  })
+  // await page.evaluate(() => {
+  //   const video = document.querySelector('video')
+  //   if (!video) { return }
+  //   video.onplay = null
+  //   video.currentTime = 0
+  // })
 }
 
 async function fetchLiveChat(url: string, reqHeaders: Record<string, string>, reqBody: any, continuation: string) {
   try {
+    logger.silly({ videoId, fetchLiveChat: { url } })
     const response = await fetch(url, {
       method: 'POST',
       headers: reqHeaders,
@@ -186,6 +195,7 @@ async function fetchLiveChat(url: string, reqHeaders: Record<string, string>, re
       debugger
       return
     }
+    logger.silly({ videoId, status: response.status, statusText: response.statusText })
     const data = await response.json()
     const liveChatContinuation = data?.continuationContents?.liveChatContinuation
     if (liveChatContinuation) {
@@ -199,6 +209,10 @@ async function fetchLiveChat(url: string, reqHeaders: Record<string, string>, re
     logger.error(error.message)
     console.trace(error)
     debugger
+    // Retry fetch request
+    const retryTimeout = 5000
+    logger.info({ videoId, fetchLiveChat: { retryTimeout } })
+    fetchLiveChatWithTimeout(url, reqHeaders, reqBody, continuation, retryTimeout)
   }
 }
 
@@ -206,7 +220,8 @@ function fetchLiveChatByContinuationData(url: string, reqHeaders: Record<string,
   fetchLiveChatWithTimeout(url, reqHeaders, reqBody, continuationData.continuation, continuationData.timeoutMs)
 }
 
-function fetchLiveChatWithTimeout(url: string, reqHeaders: Record<string, string>, reqBody: any, continuation: string, timeoutMs: number) {
+function fetchLiveChatWithTimeout(url: string, reqHeaders: Record<string, string>, reqBody: any, continuation: string, timeoutMs: number = 0) {
+  logger.silly({ videoId, fetchLiveChatWithTimeout: { timeoutMs, continuation } })
   setTimeout(async () => {
     await fetchLiveChat(url, reqHeaders, reqBody, continuation)
   }, timeoutMs)

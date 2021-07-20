@@ -2,7 +2,7 @@ export const config = {
   app: {
     logDir: '../_logs',
     chatDir: '../_chats',
-    useCookie: !true,
+    useCookies: !true,
     cookiePath: '../cookies/cookies.txt',
   },
   puppeteer: {

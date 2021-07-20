@@ -3,7 +3,6 @@ import winston, { format } from 'winston'
 import { config } from './config'
 
 export default winston.createLogger({
-  level: 'debug',
   format: format.combine(
     format(info => {
       info.level = info.level.toUpperCase()
@@ -18,6 +17,11 @@ export default winston.createLogger({
     new winston.transports.File({
       level: 'debug',
       filename: getFileName(),
+      format: format.combine(getFileFormat()),
+    }),
+    new winston.transports.File({
+      level: 'silly',
+      filename: getFileNameAll(),
       format: format.combine(getFileFormat()),
     }),
   ],
@@ -36,6 +40,14 @@ function getFileName(): string {
   const fileName = [date.getFullYear(), date.getMonth() + 1, date.getDate()]
     .map(v => String(v).padStart(2, '0'))
     .join('') + '.log'
+  const filePath = path.join(__dirname, config.app.logDir, fileName)
+  return filePath
+}
+function getFileNameAll(): string {
+  const date = new Date()
+  const fileName = [date.getFullYear(), date.getMonth() + 1, date.getDate()]
+    .map(v => String(v).padStart(2, '0'))
+    .join('') + '_all' + '.log'
   const filePath = path.join(__dirname, config.app.logDir, fileName)
   return filePath
 }
