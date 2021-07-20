@@ -250,7 +250,7 @@ function handleNewContinuation(url: string, reqHeaders: Record<string, string>, 
     logger.info({ videoId, msg: 'VIDEO END' })
     return
   } else {
-    logger.warn({ videoId, msg: 'newContinuation unhandled' })
+    logger.warn({ videoId, handleNewContinuation: { msg: 'newContinuation unhandled' } })
     logger.warn(newContinuation)
     debugger
   }
@@ -316,7 +316,7 @@ function mapChatAction(action: any) {
   if (action.clickTrackingParams) {
     return null
   }
-  logger.warn({ videoId, msg: 'action unhandled' })
+  logger.warn({ videoId, mapChatAction: { msg: 'action unhandled' } })
   logger.warn(action)
   debugger
   return null
@@ -328,7 +328,7 @@ function handleAddChatItemAction(data: any) {
   }
   const item = data.item
   if (!item) {
-    logger.warn({ videoId, msg: 'item not found' })
+    logger.warn({ videoId, handleAddChatItemAction: { msg: 'item not found' } })
     logger.warn(data)
     debugger
   }
