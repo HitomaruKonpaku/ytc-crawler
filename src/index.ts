@@ -77,7 +77,7 @@ async function launchBrowser(videoUrl: string) {
 
   page.on('request', async (request) => {
     const url = request.url()
-    if (['googleads'].some(v => url.includes(v))) {
+    if (config.app.request.blockUrls.some(v => url.includes(v))) {
       logger.silly({ videoId, request: { status: 'abort', url } })
       await request.abort()
       return

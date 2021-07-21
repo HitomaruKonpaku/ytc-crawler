@@ -4,6 +4,17 @@ export const config = {
     chatDir: '../_chats',
     useCookies: !true,
     cookiePath: '../cookies/cookies.txt',
+    request: {
+      blockUrls: [
+        'doubleclick.net',
+        '/pagead',
+        '/log_event',
+        '/ptracking',
+        '/api/stats/qoe',
+        '/api/stats/atr',
+      ],
+    },
+    response: {},
   },
   puppeteer: {
     headless: false,
