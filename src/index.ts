@@ -27,7 +27,22 @@ async function main() {
   videoId = id
   const url = getVideoUrl(id)
   logger.info({ videoUrl: url })
-  await launchBrowser(url)
+
+  const browser = await launchBrowser()
+  const openNewPage = () => {
+    setTimeout(async () => {
+      try {
+        await openBrowserPage(browser, url)
+      } catch (error) {
+        logger.error(error.message)
+        console.trace(error)
+        if (error.message.includes('Navigation timeout')) {
+          openNewPage()
+        }
+      }
+    })
+  }
+  openNewPage()
 }
 
 function getVideoUrl(id: string): string {
@@ -35,7 +50,7 @@ function getVideoUrl(id: string): string {
   return url
 }
 
-async function launchBrowser(videoUrl: string) {
+async function launchBrowser() {
   const browser = await puppeteer.launch({
     headless: config.puppeteer.headless,
     ignoreHTTPSErrors: true,
@@ -47,6 +62,12 @@ async function launchBrowser(videoUrl: string) {
     devtools: config.puppeteer.devtools,
   })
   logger.silly({ videoId, puppeteer: { browser: { action: 'launch' } } })
+  return browser
+}
+
+async function openBrowserPage(browser: puppeteer.Browser, videoUrl: string) {
+  const otherPages = await browser.pages()
+  otherPages.forEach(async page => await page.close())
 
   const page = await browser.newPage()
   logger.silly({ videoId, puppeteer: { browser: { page: { action: 'newPage' } } } })
@@ -180,6 +201,8 @@ async function launchBrowser(videoUrl: string) {
   //   video.onplay = null
   //   video.currentTime = 0
   // })
+
+  return page
 }
 
 async function fetchLiveChat(url: string, reqHeaders: Record<string, string>, reqBody: any, continuation: string) {
