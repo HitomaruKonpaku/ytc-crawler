@@ -2,7 +2,8 @@
   "name": "ytc-crawler",
   "version": "1.0.0",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "lint": "eslint src --ext .ts"
   },
   "author": "HitomaruKonpaku ",
   "license": "ISC",
@@ -18,6 +19,9 @@
   "devDependencies": {
     "@types/node": "^16.3.3",
     "@types/node-fetch": "^2.5.11",
+    "@typescript-eslint/eslint-plugin": "^4.28.4",
+    "@typescript-eslint/parser": "^4.28.4",
+    "eslint": "^7.31.0",
     "tslib": "^2.3.0",
     "typescript": "^4.3.5"
   }

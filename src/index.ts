@@ -10,6 +10,7 @@ let videoId: string
 
 main()
   .then(() => {
+    // TODO
   })
   .catch((error) => {
     logger.error(error.message)
@@ -220,7 +221,7 @@ function fetchLiveChatByContinuationData(url: string, reqHeaders: Record<string,
   fetchLiveChatWithTimeout(url, reqHeaders, reqBody, continuationData.continuation, continuationData.timeoutMs)
 }
 
-function fetchLiveChatWithTimeout(url: string, reqHeaders: Record<string, string>, reqBody: any, continuation: string, timeoutMs: number = 0) {
+function fetchLiveChatWithTimeout(url: string, reqHeaders: Record<string, string>, reqBody: any, continuation: string, timeoutMs = 0) {
   logger.silly({ videoId, fetchLiveChatWithTimeout: { timeoutMs, continuation } })
   setTimeout(async () => {
     await fetchLiveChat(url, reqHeaders, reqBody, continuation)

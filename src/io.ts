@@ -2,14 +2,14 @@ import fs from 'fs'
 import logger from './logger'
 
 export default {
-  makeDir(path: string) {
+  makeDir(path: string): void {
     if (fs.existsSync(path)) {
       return
     }
     fs.mkdirSync(path)
   },
 
-  writeFile(file: string, data: string) {
+  writeFile(file: string, data: string): void {
     try {
       fs.writeFileSync(file, data)
     } catch (error) {
@@ -18,7 +18,7 @@ export default {
     }
   },
 
-  appendFile(file: string, data: string) {
+  appendFile(file: string, data: string): void {
     try {
       fs.appendFileSync(file, data, { flag: 'as' })
     } catch (error) {

@@ -30,7 +30,7 @@ export default winston.createLogger({
 function getConsoleFormat() {
   return format.printf((info) => {
     const date = new Date().toISOString()
-    const msg = `${date} ${info.level} ${typeof info.message === 'string' ? info.message : JSON.stringify(info.message)}`;
+    const msg = `${date} ${info.level} ${typeof info.message === 'string' ? info.message : JSON.stringify(info.message)}`
     return msg
   })
 }
