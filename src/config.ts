@@ -3,7 +3,7 @@ export const config = {
     logDir: '../_logs',
     chatDir: '../_chats',
     useCookies: !true,
-    cookiePath: '../cookies/cookies.txt',
+    cookiesPath: '../cookies/cookies.txt',
     request: {
       blockUrls: [
         'doubleclick.net',

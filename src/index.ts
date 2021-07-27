@@ -6,6 +6,9 @@ import io from './io'
 import logger from './logger'
 import util from './util'
 
+const args = util.getProcessArguments()
+logger.debug({ args })
+
 let videoId: string
 
 main()
@@ -20,29 +23,30 @@ main()
 
 async function main() {
   io.makeDir(util.getChatDir())
-  const args = process.argv.slice(2)
-  logger.debug({ args })
-  const id = util.getYouTubeVideoId(args[0])
+  const id = util.getYouTubeVideoId(args['_'][0])
   logger.debug({ videoId: id })
   videoId = id
   const url = getVideoUrl(id)
   logger.info({ videoUrl: url })
 
-  const browser = await launchBrowser()
-  const openNewPage = () => {
+  const run = () => {
     setTimeout(async () => {
+      let browser
       try {
+        browser = await launchBrowser()
         await openBrowserPage(browser, url)
       } catch (error) {
         logger.error(error.message)
         console.trace(error)
-        if (error.message.includes('Navigation timeout')) {
-          openNewPage()
+        if (browser && error.message.includes('Navigation timeout')) {
+          await browser.close()
+          logger.silly({ videoId, puppeteer: { browser: { action: 'close' } } })
+          run()
         }
       }
     })
   }
-  openNewPage()
+  run()
 }
 
 function getVideoUrl(id: string): string {
@@ -73,7 +77,7 @@ async function openBrowserPage(browser: puppeteer.Browser, videoUrl: string) {
   logger.silly({ videoId, puppeteer: { browser: { page: { action: 'newPage' } } } })
   await page.setRequestInterception(true)
 
-  if (config.app.useCookies) {
+  if (config.app.useCookies || args.cookies) {
     try {
       const baseCookies = util.getCookies()
       const cookies = baseCookies.map(v => {
@@ -89,6 +93,7 @@ async function openBrowserPage(browser: puppeteer.Browser, videoUrl: string) {
         return cookie
       })
       await page.setCookie(...cookies)
+      logger.info({ videoId, puppeteer: { browser: { page: { action: 'setCookie' } } } })
     } catch (error) {
       logger.error(error.message)
       console.trace(error)
@@ -118,8 +123,7 @@ async function openBrowserPage(browser: puppeteer.Browser, videoUrl: string) {
     const continuation = body.continuation
     await browser.close()
 
-    if (config.app.useCookies) {
-      logger.info({ videoId, msg: 'Cookies enabled' })
+    if (config.app.useCookies || args.cookies) {
       try {
         const baseCookies = util.getCookies()
         const cookie = baseCookies.map(v => {
@@ -127,7 +131,7 @@ async function openBrowserPage(browser: puppeteer.Browser, videoUrl: string) {
           return s
         }).join(' ')
         Object.assign(headers, { cookie })
-        logger.info({ videoId, msg: 'Cookies applied' })
+        logger.info({ videoId, request: { msg: 'Request header cookie set' } })
       } catch (error) {
         logger.error(error.message)
         console.trace(error)
@@ -175,32 +179,6 @@ async function openBrowserPage(browser: puppeteer.Browser, videoUrl: string) {
 
   await page.goto(videoUrl)
   logger.silly({ videoId, puppeteer: { browser: { page: { action: 'goto', url: videoUrl } } } })
-
-  // await page.waitForSelector('video')
-  // await page.evaluate(() => {
-  //   const video = document.querySelector('video')
-  //   if (!video) { return }
-  //   video.onplay = () => video.pause()
-  // })
-
-  // const frameSelector = 'ytd-live-chat-frame'
-  // const buttonSelector = '#show-hide-button ytd-toggle-button-renderer'
-  // await page.waitForSelector(buttonSelector)
-  // await page.evaluate((frameSelector, buttonSelector) => {
-  //   const frame = document.querySelector(frameSelector)
-  //   if (frame.getAttribute('collapsed') === null) {
-  //     return
-  //   }
-  //   const button = document.querySelector(buttonSelector)
-  //   button.click()
-  // }, frameSelector, buttonSelector)
-
-  // await page.evaluate(() => {
-  //   const video = document.querySelector('video')
-  //   if (!video) { return }
-  //   video.onplay = null
-  //   video.currentTime = 0
-  // })
 
   return page
 }

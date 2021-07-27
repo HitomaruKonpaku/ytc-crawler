@@ -1,4 +1,6 @@
+import minimist from 'minimist'
 import path from 'path'
+import process from 'process'
 import { config } from './config'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { CookieMap } = require('cookiefile')
@@ -9,6 +11,11 @@ export default {
   setTitle(title: string): void {
     const s = String.fromCharCode(27) + ']0;' + title + String.fromCharCode(7)
     process.stdout.write(s)
+  },
+
+  getProcessArguments(): Record<string, any> {
+    const args = minimist(process.argv.slice(2))
+    return args
   },
 
   getYouTubeVideoId(url: string): string {
@@ -38,14 +45,15 @@ export default {
   },
 
   getCookies(): any[] {
-    const map = new CookieMap(this.getCookieFile())
+    const domains = ['youtube.com']
+    const map = new CookieMap(this.getCookiesFile())
     const cookies: any[] = Array.from(map.values())
-      .filter((cookie: any) => ['youtube.com'].some(v => cookie.domain.includes(v)))
+      .filter((cookie: any) => domains.some(v => cookie.domain.includes(v)))
     return cookies
   },
 
-  getCookieFile(): string {
-    const value = path.join(__dirname, config.app.cookiePath)
+  getCookiesFile(): string {
+    const value = path.join(__dirname, config.app.cookiesPath)
     return value
   },
 
