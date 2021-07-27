@@ -328,12 +328,30 @@ function handleAddChatItemAction(data: any) {
   if (!data) {
     return
   }
+
   const item = data.item
   if (!item) {
     logger.warn({ videoId, handleAddChatItemAction: { msg: 'item not found' } })
     logger.warn(data)
     debugger
+    return
   }
+
+  const toDeleteKeys = [
+    'contextMenuEndpoint',
+    'contextMenuAccessibility',
+    'trackingParams',
+  ]
+  const rendererKeys = Object.keys(item)
+  rendererKeys.forEach(rendererKey => {
+    const rendererValue = item[rendererKey]
+    toDeleteKeys.forEach(key => {
+      if (!rendererValue[key]) {
+        return
+      }
+      delete rendererValue[key]
+    })
+  })
   return item
 }
 
