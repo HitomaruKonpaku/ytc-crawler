@@ -2,6 +2,8 @@ import * as cheerio from 'cheerio'
 import fetch from 'node-fetch'
 import puppeteer from 'puppeteer'
 import { config } from './config'
+import { YouTubeLiveChatAction } from './interfaces/youtube-live-chat-action'
+import { YouTubeLiveChatContinuationData } from './interfaces/youtube-live-chat-continuation-data'
 import io from './io'
 import logger from './logger'
 import util from './util'
@@ -157,7 +159,7 @@ async function openBrowserPage(browser: puppeteer.Browser, videoUrl: string) {
     const nodes = Array.from(scripts)
       .map(v => Array.from(v.childNodes))
       .filter(v => v.length)
-      .flatMap(v => v)
+      .flat()
     const dataNode: any = nodes.find((v: any) => v['data'] && v.data.includes('ytInitialData'))
     if (!dataNode) {
       return
@@ -218,7 +220,7 @@ async function fetchLiveChat(url: string, reqHeaders: Record<string, string>, re
   }
 }
 
-function fetchLiveChatByContinuationData(url: string, reqHeaders: Record<string, string>, reqBody: any, continuationData: any) {
+function fetchLiveChatByContinuationData(url: string, reqHeaders: Record<string, string>, reqBody: any, continuationData: YouTubeLiveChatContinuationData) {
   fetchLiveChatWithTimeout(url, reqHeaders, reqBody, continuationData.continuation, continuationData.timeoutMs)
 }
 
@@ -269,9 +271,12 @@ function handleLiveChatData(liveChatContinuation: any) {
   }
 }
 
-function handleLiveChatActions(actions: any[]) {
+function handleLiveChatActions(actions: YouTubeLiveChatAction[]) {
   logger.info({ videoId, actionCount: actions.length })
-  const renderers = actions.map(v => mapChatAction(v)).filter(v => v)
+  const renderers = actions
+    .map(v => mapChatAction(v))
+    .flat()
+    .filter(v => v)
 
   // Save all messages
   let content = buildContentFromRenderers(renderers)
@@ -286,16 +291,16 @@ function handleLiveChatActions(actions: any[]) {
   }
 }
 
-function mapChatAction(action: any) {
+function mapChatAction(action: YouTubeLiveChatAction) {
   if (action.replayChatItemAction) {
-    const replayActions = action.replayChatItemAction.actions
+    const replayActions: any[] = action.replayChatItemAction.actions || []
     if (replayActions.length !== 1) {
       logger.warn({ videoId, msg: 'replayActions different than 1' })
       logger.warn(replayActions)
       debugger
-      return
     }
-    action = replayActions[0]
+    const mapReplayActions: any[] = replayActions.map(v => mapChatAction(v))
+    return mapReplayActions
   }
   if (action.addChatItemAction) {
     return handleAddChatItemAction(action.addChatItemAction)
@@ -310,6 +315,9 @@ function mapChatAction(action: any) {
     return null
   }
   if (action.replaceChatItemAction) {
+    return null
+  }
+  if (action.replaceLiveChatRendererAction) {
     return null
   }
   if (action.showLiveChatTooltipCommand) {
