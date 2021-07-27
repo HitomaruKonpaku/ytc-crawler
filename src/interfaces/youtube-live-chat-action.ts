@@ -1,5 +1,5 @@
 export interface YouTubeLiveChatAction {
-  replayChatItemAction?: any
+  replayChatItemAction?: { actions?: YouTubeLiveChatAction[] }
   addChatItemAction?: any
   addLiveChatTickerItemAction?: any
   markChatItemAsDeletedAction?: any

@@ -293,7 +293,7 @@ function handleLiveChatActions(actions: YouTubeLiveChatAction[]) {
 
 function getChatActionItem(action: YouTubeLiveChatAction) {
   if (action.replayChatItemAction) {
-    const replayChatActions: any[] = action.replayChatItemAction.actions || []
+    const replayChatActions = action.replayChatItemAction.actions || []
     if (replayChatActions.length !== 1) {
       logger.warn({ videoId, msg: 'replayActions different than 1' })
       logger.warn(replayChatActions)
