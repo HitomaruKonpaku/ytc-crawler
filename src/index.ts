@@ -274,7 +274,7 @@ function handleLiveChatData(liveChatContinuation: any) {
 function handleLiveChatActions(actions: YouTubeLiveChatAction[]) {
   logger.info({ videoId, actionCount: actions.length })
   const renderers = actions
-    .map(v => mapChatAction(v))
+    .map(v => getChatActionItem(v))
     .flat()
     .filter(v => v)
 
@@ -291,19 +291,19 @@ function handleLiveChatActions(actions: YouTubeLiveChatAction[]) {
   }
 }
 
-function mapChatAction(action: YouTubeLiveChatAction) {
+function getChatActionItem(action: YouTubeLiveChatAction) {
   if (action.replayChatItemAction) {
-    const replayActions: any[] = action.replayChatItemAction.actions || []
-    if (replayActions.length !== 1) {
+    const replayChatActions: any[] = action.replayChatItemAction.actions || []
+    if (replayChatActions.length !== 1) {
       logger.warn({ videoId, msg: 'replayActions different than 1' })
-      logger.warn(replayActions)
+      logger.warn(replayChatActions)
       debugger
     }
-    const mapReplayActions: any[] = replayActions.map(v => mapChatAction(v))
-    return mapReplayActions
+    const replayChatActionItems: any[] = replayChatActions.map(v => getChatActionItem(v))
+    return replayChatActionItems
   }
   if (action.addChatItemAction) {
-    return handleAddChatItemAction(action.addChatItemAction)
+    return getAddChatItemActionItem(action.addChatItemAction)
   }
   if (action.addLiveChatTickerItemAction) {
     return null
@@ -332,7 +332,7 @@ function mapChatAction(action: YouTubeLiveChatAction) {
   return null
 }
 
-function handleAddChatItemAction(data: any) {
+function getAddChatItemActionItem(data: any) {
   if (!data) {
     return
   }
