@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "scripts": {
     "build": "tsc",
-    "lint": "eslint src --ext .ts"
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix"
   },
   "author": "HitomaruKonpaku ",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.22.0",
     "cheerio": "^1.0.0-rc.10",
     "cookiefile": "^1.0.10",
     "dotenv": "^10.0.0",

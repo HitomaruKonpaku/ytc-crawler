@@ -63,4 +63,12 @@ export default {
       .join('')
     return value
   },
+
+  makeYoutubeMessage(runs: any[]): string {
+    if (!runs?.length) {
+      return ''
+    }
+    const msg = runs.reduce((pv, cv) => [pv, cv.emoji && cv.emoji.shortcuts[0] || cv.text || ''].filter(v => v).join(' '), '')
+    return msg
+  },
 }

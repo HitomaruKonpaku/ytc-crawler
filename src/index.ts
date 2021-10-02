@@ -1,7 +1,9 @@
+import axios from 'axios'
 import * as cheerio from 'cheerio'
 import fetch from 'node-fetch'
 import puppeteer from 'puppeteer'
 import { config } from './config'
+import { YoutubeVideoMeta } from './interfaces/meta/youtube-video-meta.interface'
 import { YouTubeLiveChatAction } from './interfaces/youtube-live-chat-action'
 import { YouTubeLiveChatContinuationData } from './interfaces/youtube-live-chat-continuation-data'
 import io from './io'
@@ -11,6 +13,7 @@ import util from './util'
 const args = util.getProcessArguments()
 logger.debug({ args })
 
+const videoMeta: YoutubeVideoMeta = {}
 let videoId: string
 
 main()
@@ -144,6 +147,32 @@ async function openBrowserPage(browser: puppeteer.Browser, videoUrl: string) {
     await fetchLiveChat(url, headers, body, continuation)
   })
 
+  page.once('response', async (response) => {
+    const body = await response.text()
+    const $ = cheerio.load(body)
+    const baseNode = Array.from($('body *[itemid][itemtype]'))[0]
+
+    const updateNodeMeta = (meta: any, node: any) => {
+      node.childNodes.forEach(childNode => {
+        const attribs = childNode.attribs
+        const key: string = attribs.itemprop
+        if (!key) {
+          return
+        }
+        if (childNode.childNodes.length) {
+          meta[key] = {}
+          updateNodeMeta(meta[key], childNode)
+          return
+        }
+        const value: string = attribs.href || attribs.content
+        meta[key] = value
+      })
+    }
+
+    updateNodeMeta(videoMeta, baseNode)
+    logger.info(videoMeta)
+  })
+
   page.on('response', async (response) => {
     const url = response.url()
     logger.silly({ videoId, responseUrl: url })
@@ -197,6 +226,10 @@ async function fetchLiveChat(url: string, reqHeaders: Record<string, string>, re
       logger.error({ videoId, status: response.status, statusText: response.statusText })
       console.trace(response)
       debugger
+      // Retry fetch request
+      const retryTimeout = 5000
+      logger.info({ videoId, fetchLiveChat: { retryTimeout } })
+      fetchLiveChatWithTimeout(url, reqHeaders, reqBody, continuation, retryTimeout)
       return
     }
     logger.silly({ videoId, status: response.status, statusText: response.statusText })
@@ -289,6 +322,8 @@ function handleLiveChatActions(actions: YouTubeLiveChatAction[]) {
   if (content) {
     io.appendFile(util.getSuperChatFile(videoId), content)
   }
+
+  runChannelConfig(renderers)
 }
 
 function getChatActionItem(action: YouTubeLiveChatAction) {
@@ -305,6 +340,19 @@ function getChatActionItem(action: YouTubeLiveChatAction) {
   if (action.addChatItemAction) {
     return getAddChatItemActionItem(action.addChatItemAction)
   }
+
+  try {
+    if (action.addBannerToLiveChatCommand) {
+      const renderer = action.addBannerToLiveChatCommand.bannerRenderer
+      logger.warn(renderer)
+      debugger
+      return [renderer]
+    }
+  } catch (error) {
+    logger.error(error.message)
+    debugger
+  }
+
   if (action.addLiveChatTickerItemAction) {
     return null
   }
@@ -371,4 +419,53 @@ function buildContentFromRenderers(renderers: any[]) {
     content += '\r\n'
   }
   return content
+}
+
+function runChannelConfig(actions: any[]) {
+  const channelConfig = config.youtube.channels[videoMeta.channelId]
+  if (!channelConfig) {
+    return
+  }
+
+  const webhookUrls: string[] = channelConfig?.webhookUrls || []
+  let content = ''
+
+  actions.forEach(action => {
+    const renderer = action.liveChatTextMessageRenderer
+    if (!renderer) {
+      return
+    }
+
+    const authorId = renderer.authorExternalChannelId
+    if (channelConfig?.fromAuthorIds?.length && !channelConfig.fromAuthorIds.some(v => v === authorId)) {
+      return
+    }
+
+    const authorName = renderer.authorName.simpleText
+    if (channelConfig?.fromAuthorNames?.length && !channelConfig.fromAuthorNames.some(v => v === authorName)) {
+      return
+    }
+
+    const msg = util.makeYoutubeMessage(renderer.message.runs)
+    if (!msg || (channelConfig?.messageContains?.length && !channelConfig.messageContains.some(v => msg.includes(v)))) {
+      return
+    }
+
+    content += `${msg}\r\n`
+  })
+
+  content = content.trim()
+  if (!content) {
+    return
+  }
+
+  webhookUrls.forEach(async url => {
+    try {
+      const res = await axios.post(url, { content })
+      logger.info({ type: 'Webhook', status: res.status, statusText: res.statusText })
+    } catch (error) {
+      logger.info({ type: 'Webhook', error: error.message })
+      debugger
+    }
+  })
 }

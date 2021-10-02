@@ -22,4 +22,15 @@ export const config = {
     height: 1080,
     devtools: false,
   },
+  youtube: {
+    channels: {
+      'UC7fk0CB07ly8oSl0aqKkqFg': {
+        fromAuthorIds: ['UC-ORlsiOfeFrWJyxqnQrxhA'],
+        fromAuthorNames: [],
+        messageContains: ['[EN]'],
+        webhookUrls: [
+        ],
+      },
+    },
+  },
 }
