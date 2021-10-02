@@ -15,6 +15,7 @@ logger.debug({ args })
 
 const videoMeta: YoutubeVideoMeta = {}
 let videoId: string
+let isMembersOnly = false
 
 main()
   .then(() => {
@@ -149,6 +150,9 @@ async function openBrowserPage(browser: puppeteer.Browser, videoUrl: string) {
 
   page.once('response', async (response) => {
     const body = await response.text()
+    const data = util.getYtInitialData(body)
+    isMembersOnly = JSON.stringify(data).includes('Members only')
+
     const $ = cheerio.load(body)
     const baseNode = Array.from($('body *[itemid][itemtype]'))[0]
 
@@ -176,29 +180,12 @@ async function openBrowserPage(browser: puppeteer.Browser, videoUrl: string) {
   page.on('response', async (response) => {
     const url = response.url()
     logger.silly({ videoId, responseUrl: url })
-    if (!url.includes('live_chat')) {
+    if (!url.includes('live_chat') || ['live_chat_polymer'].some(v => url.includes(v))) {
       return
     }
     const body = await response.text()
-    const $ = cheerio.load(body)
-    const scripts = $('script')
-    if (!scripts) {
-      return
-    }
-    const nodes = Array.from(scripts)
-      .map(v => Array.from(v.childNodes))
-      .filter(v => v.length)
-      .flat()
-    const dataNode: any = nodes.find((v: any) => v['data'] && v.data.includes('ytInitialData'))
-    if (!dataNode) {
-      return
-    }
-    const rawData = dataNode['data']
-    const jsonData = rawData
-      .replace('window["ytInitialData"] = ', '')
-      .replace(/;$/, '')
     try {
-      const data = JSON.parse(jsonData)
+      const data = util.getYtInitialData(body)
       const liveChatContinuation = data?.continuationContents?.liveChatContinuation
       handleLiveChatData(liveChatContinuation)
     } catch (error) {
@@ -427,7 +414,6 @@ function runChannelConfig(actions: any[]) {
     return
   }
 
-  const webhookUrls: string[] = channelConfig?.webhookUrls || []
   let content = ''
 
   actions.forEach(action => {
@@ -437,17 +423,17 @@ function runChannelConfig(actions: any[]) {
     }
 
     const authorId = renderer.authorExternalChannelId
-    if (channelConfig?.fromAuthorIds?.length && !channelConfig.fromAuthorIds.some(v => v === authorId)) {
+    if (channelConfig.fromAuthorIds?.length && !channelConfig.fromAuthorIds.some(v => v === authorId)) {
       return
     }
 
     const authorName = renderer.authorName.simpleText
-    if (channelConfig?.fromAuthorNames?.length && !channelConfig.fromAuthorNames.some(v => v === authorName)) {
+    if (channelConfig.fromAuthorNames?.length && !channelConfig.fromAuthorNames.some(v => v === authorName)) {
       return
     }
 
     const msg = util.makeYoutubeMessage(renderer.message.runs)
-    if (!msg || (channelConfig?.messageContains?.length && !channelConfig.messageContains.some(v => msg.includes(v)))) {
+    if (!msg || (channelConfig.messageContains?.length && !channelConfig.messageContains.some(v => msg.includes(v)))) {
       return
     }
 
@@ -459,13 +445,16 @@ function runChannelConfig(actions: any[]) {
     return
   }
 
-  webhookUrls.forEach(async url => {
-    try {
-      const res = await axios.post(url, { content })
-      logger.info({ type: 'Webhook', status: res.status, statusText: res.statusText })
-    } catch (error) {
-      logger.info({ type: 'Webhook', error: error.message })
-      debugger
-    }
-  })
+  const webhookUrls: string[] = (isMembersOnly ? channelConfig.membersWebhookUrls : channelConfig.defaultWebhookUrls) || []
+  webhookUrls.forEach(url => sendWebhook(url, { content }))
+}
+
+async function sendWebhook(url: string, body) {
+  try {
+    const res = await axios.post(url, body)
+    logger.info({ type: 'Webhook', status: res.status, statusText: res.statusText })
+  } catch (error) {
+    logger.info({ type: 'Webhook', error: error.message })
+    debugger
+  }
 }

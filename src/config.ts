@@ -28,7 +28,9 @@ export const config = {
         fromAuthorIds: ['UC-ORlsiOfeFrWJyxqnQrxhA'],
         fromAuthorNames: [],
         messageContains: ['[EN]'],
-        webhookUrls: [
+        defaultWebhookUrls: [
+        ],
+        membersWebhookUrls: [
         ],
       },
     },
