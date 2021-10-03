@@ -455,9 +455,13 @@ async function sendWebhook(url: string, body) {
     const headers = res.headers
     const logHeaders = ['x-ratelimit-limit', 'x-ratelimit-remaining', 'x-ratelimit-reset-after']
       .reduce((pv, cv) => Object.assign(pv, { [cv]: headers[cv] }), {})
-    logger.info({ type: 'Webhook', status: res.status, statusText: res.statusText, headers: logHeaders })
+    logger.info({ type: 'Webhook', response: { status: res.status, statusText: res.statusText, headers: logHeaders } })
   } catch (error) {
-    logger.info({ type: 'Webhook', error: error.message })
+    const res = error.response
+    const headers = res.headers
+    const logHeaders = ['x-ratelimit-limit', 'x-ratelimit-remaining', 'x-ratelimit-reset-after']
+      .reduce((pv, cv) => Object.assign(pv, { [cv]: headers[cv] }), {})
+    logger.error({ type: 'Webhook', message: error.message, response: { status: res.status, statusText: res.statusText, headers: logHeaders } })
     debugger
   }
 }
