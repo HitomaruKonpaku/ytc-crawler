@@ -1,4 +1,4 @@
-import { YouTubeLiveChatContinuationData } from './youtube-live-chat-continuation-data'
+import { YouTubeLiveChatContinuationData } from './youtube-live-chat-continuation-data.interface'
 
 export interface YouTubeLiveChatContinuation {
   liveChatReplayContinuationData?: YouTubeLiveChatContinuationData
