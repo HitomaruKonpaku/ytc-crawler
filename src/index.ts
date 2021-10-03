@@ -452,7 +452,10 @@ function runChannelConfig(actions: any[]) {
 async function sendWebhook(url: string, body) {
   try {
     const res = await axios.post(url, body)
-    logger.info({ type: 'Webhook', status: res.status, statusText: res.statusText })
+    const headers = res.headers
+    const logHeaders = ['x-ratelimit-limit', 'x-ratelimit-remaining', 'x-ratelimit-reset-after']
+      .reduce((pv, cv) => Object.assign(pv, { [cv]: headers[cv] }), {})
+    logger.info({ type: 'Webhook', status: res.status, statusText: res.statusText, headers: logHeaders })
   } catch (error) {
     logger.info({ type: 'Webhook', error: error.message })
     debugger
