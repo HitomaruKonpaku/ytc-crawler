@@ -43,6 +43,7 @@ function getFileName(): string {
   const filePath = path.join(__dirname, config.app.logDir, fileName)
   return filePath
 }
+
 function getFileNameAll(): string {
   const date = new Date()
   const fileName = [date.getFullYear(), date.getMonth() + 1, date.getDate()]

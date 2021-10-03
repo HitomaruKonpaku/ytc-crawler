@@ -24,8 +24,12 @@ export const config = {
   },
   youtube: {
     channels: {
+      // Nakiri Ayame Ch. 百鬼あやめ
       'UC7fk0CB07ly8oSl0aqKkqFg': {
-        fromAuthorIds: ['UC-ORlsiOfeFrWJyxqnQrxhA'],
+        fromAuthorIds: [
+          // El Leche
+          'UC-ORlsiOfeFrWJyxqnQrxhA',
+        ],
         fromAuthorNames: [],
         messageContains: ['[EN]'],
         defaultWebhookUrls: [
