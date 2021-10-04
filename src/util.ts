@@ -1,34 +1,11 @@
-import * as cheerio from 'cheerio'
-import minimist from 'minimist'
 import path from 'path'
-import process from 'process'
 import { config } from './config'
-import logger from './logger'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { CookieMap } = require('cookiefile')
 
 const date = new Date()
 
 export default {
-  setTitle(title: string): void {
-    const s = String.fromCharCode(27) + ']0;' + title + String.fromCharCode(7)
-    process.stdout.write(s)
-  },
-
-  getProcessArguments(): Record<string, any> {
-    const args = minimist(process.argv.slice(2))
-    return args
-  },
-
-  getYouTubeVideoId(url: string): string {
-    const pattern = /^(?:(?:https:\/\/youtu\.be\/)|(https:\/\/www\.youtube\.com\/watch\?v=)){0,1}[\w-]{11}$/g
-    if (!pattern.test(url)) {
-      throw new Error('Invalid YouTube URL')
-    }
-    const id = url.slice(-11)
-    return id
-  },
-
   getChatDir(): string {
     const value = path.join(__dirname, config.app.chatDir)
     return value
@@ -66,23 +43,13 @@ export default {
     return value
   },
 
-  getYtInitialData(body: string): any {
-    logger.info('getYtInitialData')
-    const $ = cheerio.load(body)
-    const node = Array.from($('script'))
-      .map(v => Array.from(v.childNodes))
-      .filter(v => v.length)
-      .flat()
-      .find((v: any) => v.data && v.data.includes('ytInitialData'))
-    if (!node) {
-      logger.warn('ytInitialData not found')
-      return null
+  getYouTubeVideoId(url: string): string {
+    const pattern = /^(?:(?:https:\/\/youtu\.be\/)|(https:\/\/www\.youtube\.com\/watch\?v=)){0,1}[\w-]{11}$/g
+    if (!pattern.test(url)) {
+      throw new Error('Invalid YouTube URL')
     }
-    const rawData: string = node['data']
-    const jsonData = rawData.substring(rawData.indexOf('{'), rawData.lastIndexOf('}') + 1)
-    const obj = JSON.parse(jsonData)
-    logger.info('ytInitialData found')
-    return obj
+    const id = url.slice(-11)
+    return id
   },
 
   makeYoutubeMessage(runs: any[]): string {
