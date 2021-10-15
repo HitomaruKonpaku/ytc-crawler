@@ -1,6 +1,5 @@
 export const config = {
   app: {
-    logDir: '../_logs',
     chatDir: '../_chats',
     useCookies: !true,
     cookiesPath: '../cookies/cookies.txt',
@@ -15,6 +14,10 @@ export const config = {
       ],
     },
     response: {},
+  },
+  logger: {
+    dir: './logs',
+    datePattern: 'YYMMDD',
   },
   puppeteer: {
     headless: false,
