@@ -4,8 +4,8 @@ import { config } from './config'
 
 function getPrintFormat() {
   return format.printf((info) => (Object.keys(info.metadata).length
-    ? `${info.timestamp} | [${info.level}] ${[info.label, info.message].filter((v) => v).join(' ')} | ${JSON.stringify(info.metadata)}`
-    : `${info.timestamp} | [${info.level}] ${[info.label, info.message].filter((v) => v).join(' ')}`))
+    ? `${info.timestamp} | [${info.level}] ${[info.label, typeof info.message === 'string' ? info.message : JSON.stringify(info.message)].filter((v) => v).join(' ')} | ${JSON.stringify(info.metadata)}`
+    : `${info.timestamp} | [${info.level}] ${[info.label, typeof info.message === 'string' ? info.message : JSON.stringify(info.message)].filter((v) => v).join(' ')}`))
 }
 
 const logger = winston.createLogger({
