@@ -1,7 +1,7 @@
-node_modules
-dist
-.vscode
-.tmp
-_logs
-_chats
-cookies
+node_modules/
+dist/
+.vscode/
+.tmp/
+_chats/
+logs/
+cookies/
