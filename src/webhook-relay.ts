@@ -1,5 +1,5 @@
 import axios from 'axios'
-import logger from './logger'
+import { logger } from './logger'
 
 export class WebhookRelay {
   private readonly CHAR_COUNT_MAX = 2000

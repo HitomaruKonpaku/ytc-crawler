@@ -7,7 +7,7 @@ import { args } from './args'
 import { config } from './config'
 import { YoutubeVideoMeta } from './interfaces/meta/youtube-video-meta.interface'
 import { YouTubeLiveChatContinuationData } from './interfaces/youtube-live-chat-continuation-data.interface'
-import logger from './logger'
+import { logger } from './logger'
 import util from './util'
 
 export class Crawler extends EventEmitter {
