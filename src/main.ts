@@ -1,6 +1,6 @@
 import { args } from './args'
 import { Crawler } from './crawler'
-import logger from './logger'
+import { logger } from './logger'
 import { Receiver } from './receiver'
 import util from './util'
 

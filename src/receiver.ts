@@ -2,7 +2,7 @@ import { config } from './config'
 import { Crawler } from './crawler'
 import { YouTubeLiveChatAction } from './interfaces/youtube-live-chat-action.interface'
 import io from './io'
-import logger from './logger'
+import { logger } from './logger'
 import util from './util'
 import { WebhookRelay } from './webhook-relay'
 
@@ -52,14 +52,16 @@ export class Receiver {
 
   private clearWebhookRelays() {
     const remainingWebhookRelays = this.webhookRelays.filter(v => v.hasContent())
-    logger.info({ id: this.videoId, context: 'receiver', remainingWebhookRelayCount: remainingWebhookRelays.length })
+    if (!remainingWebhookRelays.length) {
+      return
+    }
+
+    logger.info({ id: this.videoId, context: 'receiver', remainingWebhookRelays: remainingWebhookRelays.length })
     remainingWebhookRelays.forEach(v => v.send())
 
-    if (remainingWebhookRelays.length) {
-      setTimeout(() => {
-        this.clearWebhookRelays()
-      }, 5000)
-    }
+    setTimeout(() => {
+      this.clearWebhookRelays()
+    }, 5000)
   }
 
   private handleData(data: any) {
